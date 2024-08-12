@@ -8,27 +8,31 @@ from newspaper import Article
 from openai import OpenAI  # Import OpenAI library
 import time
 from flask_cors import CORS
+import logging
+
 
 app = Flask(__name__)
 
 # Apply CORS to the entire app
 CORS(app)
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def extract_links(url):
     """Extracts relevant article links from the given URL."""
     try:
         response = requests.get(url)
-        print("response in extract_links is ========>", response)
+        logging.debug("response in extract_links is ========>", response)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx, 5xx)
         soup = BeautifulSoup(response.content, 'html.parser')
         anchor_tags = soup.find_all('a')
         links = [tag.get('href') for tag in anchor_tags if tag.get('href') is not None]
         substr = 'https://indianexpress.com/article'
         relevant_articles = list(set([link for link in links if substr in link]))
-        print("relevant_articles ========>", relevant_articles)
+        logging.debug("relevant_articles ========>", relevant_articles)
         return relevant_articles
     except requests.exceptions.RequestException as e:
-        print(f"Failed to retrieve the webpage. Error: {e}")
+        logging.debug(f"Failed to retrieve the webpage. Error: {e}")
         return []
 
 def newspaper_text_extraction(article_url):
@@ -39,12 +43,12 @@ def newspaper_text_extraction(article_url):
         article.parse()
         return article
     except Exception as e:
-        print(f"Error downloading article from URL: {article_url}. Error: {e}")
+        logging.debug(f"Error downloading article from URL: {article_url}. Error: {e}")
         return None
 
 def summarize_text(text, word_count):
     """Summarizes the text using OpenAI API and returns a dictionary with summary and Q&A."""
-    print("Word count:", word_count)
+    logging.debug("Word count:", word_count)
     client = OpenAI(
         api_key="54be9686eeb04ecb8befe97e6bf30642",
         base_url="https://api.aimlapi.com",
@@ -77,25 +81,25 @@ def summarize_text(text, word_count):
 
             # print("Received summary from API:", summary)  # Debugging statement
 
-            print("summary ===========>", summary)
+            logging.debug("summary ===========>", summary)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logging.debug(f"An unexpected error occurred: {e}")
             summary = {'summary': '', 'qna': []}  # Return empty summary in case of failure
     else:
         sumamry = {'summary': '', 'qna': []}  # Handle empty text scenario
-    print("Final Summary:", summary)
+    logging.debug("Final Summary:", summary)
     return summary
 
 def generate_response():
     """Generate the final response with article summaries and Q&A."""
-    print("<===========program started from generate_response() ===========>")
+    logging.debug("<===========program started from generate_response() ===========>")
     response = []
     url = 'https://indianexpress.com/todays-paper/'
-    print("url is ==========>", url)
+    logging.debug("url is ==========>", url)
     links = extract_links(url)
 
     for link in links[:1]:  # Limiting to first link for demonstration
-        print("Processing link:", link)
+        logging.debug("Processing link:", link)
         article_url = link
         article = newspaper_text_extraction(article_url)
         if article is None:
@@ -107,7 +111,7 @@ def generate_response():
         summary_dict = summarize_text(article_text, word_count)
 
         json_data = json.loads(summary_dict)
-        print('json_data =====>', json_data)
+        logging.debug('json_data =====>', json_data)
 
         main_obj = {
             'title': article_title,
@@ -122,7 +126,7 @@ def generate_response():
 
 @app.route('/api/articles', methods=['GET'])
 def get_articles():
-    print("<=========Calling /api/articles get method =========>")
+    logging.debug("<=========Calling /api/articles get method =========>")
     """Endpoint to get summarized articles with Q&A."""
     response_data = generate_response()
     return jsonify(response_data)
