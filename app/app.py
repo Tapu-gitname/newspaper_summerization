@@ -18,12 +18,14 @@ def extract_links(url):
     """Extracts relevant article links from the given URL."""
     try:
         response = requests.get(url)
+        print("response in extract_links is ========>", response)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx, 5xx)
         soup = BeautifulSoup(response.content, 'html.parser')
         anchor_tags = soup.find_all('a')
         links = [tag.get('href') for tag in anchor_tags if tag.get('href') is not None]
         substr = 'https://indianexpress.com/article'
         relevant_articles = list(set([link for link in links if substr in link]))
+        print("relevant_articles ========>", relevant_articles)
         return relevant_articles
     except requests.exceptions.RequestException as e:
         print(f"Failed to retrieve the webpage. Error: {e}")
@@ -86,8 +88,10 @@ def summarize_text(text, word_count):
 
 def generate_response():
     """Generate the final response with article summaries and Q&A."""
+    print("<===========program started from generate_response() ===========>")
     response = []
     url = 'https://indianexpress.com/todays-paper/'
+    print("url is ==========>", url)
     links = extract_links(url)
 
     for link in links[:1]:  # Limiting to first link for demonstration
@@ -118,6 +122,7 @@ def generate_response():
 
 @app.route('/api/articles', methods=['GET'])
 def get_articles():
+    print("<=========Calling /api/articles get method =========>")
     """Endpoint to get summarized articles with Q&A."""
     response_data = generate_response()
     return jsonify(response_data)
