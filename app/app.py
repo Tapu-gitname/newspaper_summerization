@@ -131,5 +131,11 @@ def get_articles():
     response_data = generate_response()
     return jsonify(response_data)
 
+@app.route('/', methods=['GET'])
+def start_message():
+    logging.debug("<=========Stared with no routes==============>")
+    return 'Welcome'
+
 if __name__ == '__main__':
+    logging.debug("app.py started")
     app.run(debug=True)
